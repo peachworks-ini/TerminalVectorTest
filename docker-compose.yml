@@ -1,0 +1,30 @@
+services:
+  terminalvector:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    platform: linux/arm64
+    container_name: terminalvector-backend
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  director:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    platform: linux/arm64
+    container_name: terminalvector-director
+    command: ["python", "/app/auto_demo.py"]
+    environment:
+      TERMINALVECTOR_URL: http://terminalvector:8080
+      TERMINALVECTOR_HEADLESS: "${TERMINALVECTOR_HEADLESS:-0}"
+    depends_on:
+      terminalvector:
+        condition: service_healthy
+    restart: unless-stopped
